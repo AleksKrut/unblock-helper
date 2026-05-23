@@ -22,6 +22,14 @@
 
 ## Быстрый старт
 
+### Десктоп-приложение (рекомендуется)
+
+1. Запустите **`start-desktop.bat`** → в UAC нажмите «Да».
+2. Нажмите **«Установить движок»**, затем **«Запустить обход»**.
+3. **«Проверить сайты»** — зелёные статусы YouTube и Discord.
+
+### Командная строка
+
 1. Клонируйте репозиторий и откройте папку в терминале.
 2. Запустите **`start-dpi.bat`** → в UAC нажмите «Да».
 3. При первом запуске скачается движок (~1.4 MB).
@@ -29,7 +37,8 @@
 
 | Файл | Назначение |
 |------|------------|
-| `start-dpi.bat` | Запуск обхода |
+| **`start-desktop.bat`** | **GUI-приложение** |
+| `start-dpi.bat` | Запуск обхода (CLI) |
 | `start-dpi-auto.bat` | Автоподбор стратегии |
 | `fix-discord.bat` | Discord завис на обновлениях |
 | `start.bat` | Интерактивное меню |
@@ -39,13 +48,16 @@
 ## Установка вручную
 
 ```powershell
-git clone https://github.com/AleksKrut/unblock-helper.git
+git clone https://github.com/YOUR_USERNAME/unblock-helper.git
 cd unblock-helper
 
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-desktop.txt   # GUI
+# или: pip install -r requirements.txt    # только CLI
 
+python desktop/app.py
+# или CLI:
 python main.py dpi-install
 python main.py dpi-start --admin
 python main.py check
@@ -81,15 +93,20 @@ python main.py check
 
 ```
 unblock-helper/
+├── desktop/
+│   └── app.py           # GUI (CustomTkinter)
 ├── main.py              # CLI и меню
 ├── dpi.py               # Загрузка и управление zapret
 ├── checker.py           # Проверка YouTube / Discord
 ├── discord_fix.py       # Исправление Discord
 ├── data/
 │   └── discord-hosts.txt
+├── start-desktop.bat
 ├── start-dpi.bat
 ├── start-dpi-auto.bat
 ├── fix-discord.bat
+├── requirements.txt
+├── requirements-desktop.txt
 └── config.example.json
 ```
 

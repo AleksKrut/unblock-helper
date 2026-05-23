@@ -108,38 +108,41 @@ def restart_dpi_for_discord(strategy: str | None = None) -> tuple[bool, str]:
     return dpi_start(strategy or DISCORD_STRATEGIES[0])
 
 
-def run_full_fix(use_hosts: bool = False, strategy: str | None = None) -> int:
-    print("=== Исправление Discord ===\n")
+def run_full_fix(
+    use_hosts: bool = False,
+    strategy: str | None = None,
+    log: callable[[str], None] | None = None,
+) -> int:
+    def out(msg: str) -> None:
+        if log:
+            log(msg)
+        else:
+            print(msg)
+
+    out("=== Исправление Discord ===")
 
     ok, msg = patch_user_hostlist()
-    print(f"[1] Списки: {msg}")
+    out(f"[1] Списки: {msg}")
     if not ok:
         return 1
 
     if use_hosts:
         ok, msg = _apply_hosts_snippet()
-        print(f"[2] Hosts: {msg}")
+        out(f"[2] Hosts: {msg}")
     else:
-        print("[2] Hosts: пропущено (флаг --hosts)")
+        out("[2] Hosts: пропущено")
 
     ok, msg = clear_discord_cache()
-    print(f"[3] Кэш: {msg}")
+    out(f"[3] Кэш: {msg}")
 
     strat = strategy or DISCORD_STRATEGIES[0]
     ok, msg = restart_dpi_for_discord(strat)
-    print(f"[4] DPI ({strat}): {msg}")
+    out(f"[4] DPI ({strat}): {msg}")
     if not ok:
-        print("\nПопробуйте: start-dpi-auto.bat")
+        out("Попробуйте автоподбор стратегии.")
         return 1
 
-    print(
-        """
-Готово:
-  1. Оставьте запущенным winws (start-dpi.bat)
-  2. Откройте Discord из меню Пуск
-  3. Если снова зависло — start-dpi-auto.bat
-"""
-    )
+    out("Готово. Перезапустите Discord из меню Пуск.")
     return 0
 
 

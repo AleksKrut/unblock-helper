@@ -7,7 +7,7 @@
 ## Description (краткое описание, до 350 символов)
 
 ```
-Обход блокировок YouTube и Discord на Windows через DPI (zapret). Автоустановка, подбор стратегии, Discord Fix. Без VPN.
+Обход блокировок YouTube и Discord на Windows через DPI (zapret). GUI + CLI. Автоустановка, подбор стратегии, Discord Fix.
 ```
 
 ## Topics (теги)
@@ -19,8 +19,10 @@ zapret
 dpi
 windows
 unblock
+gui
+desktop-app
+customtkinter
 censorship-circumvention
-russia
 winws
 ```
 
