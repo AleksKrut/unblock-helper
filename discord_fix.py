@@ -8,10 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from app_paths import DISCORD_HOSTS_FILE
 from dpi import get_bundle_root, start as dpi_start, stop as dpi_stop
-
-ROOT = Path(__file__).resolve().parent
-DISCORD_HOSTS_FILE = ROOT / "data" / "discord-hosts.txt"
 
 DISCORD_STRATEGIES = [
     "general (ALT).bat",

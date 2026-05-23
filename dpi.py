@@ -16,9 +16,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-ZAPRET_CACHE = ROOT / "zapret-cache"
-STATE_PATH = ROOT / "zapret-state.json"
+from app_paths import ROOT, STATE_PATH, ZAPRET_CACHE
 
 GITHUB_API = "https://api.github.com/repos/Flowseal/zapret-discord-youtube/releases/latest"
 WINWS_IMAGE = "winws.exe"
@@ -54,15 +52,21 @@ def request_admin(extra_args: list[str] | None = None) -> None:
     """Перезапуск с правами администратора (нужны для WinDivert)."""
     import ctypes
 
-    args = [str(Path(sys.argv[0]).resolve()), *(extra_args or sys.argv[1:])]
-    if Path(sys.argv[0]).suffix.lower() in (".py", ""):
-        exe = sys.executable
-        params = " ".join(f'"{a}"' if " " in a else a for a in [exe, *args])
-    else:
-        exe = str(Path(sys.argv[0]).resolve())
-        params = " ".join(f'"{a}"' if " " in a else a for a in args[1:])
+    from app_paths import is_frozen
 
-    ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, params, str(ROOT), 1)
+    if is_frozen():
+        exe = sys.executable
+        params = " ".join(f'"{a}"' if " " in a else a for a in (extra_args or []))
+    else:
+        args = [str(Path(sys.argv[0]).resolve()), *(extra_args or sys.argv[1:])]
+        if Path(sys.argv[0]).suffix.lower() in (".py", ""):
+            exe = sys.executable
+            params = " ".join(f'"{a}"' if " " in a else a for a in [exe, *args])
+        else:
+            exe = str(Path(sys.argv[0]).resolve())
+            params = " ".join(f'"{a}"' if " " in a else a for a in args[1:])
+
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, params or None, str(ROOT), 1)
     sys.exit(0)
 
 
@@ -179,14 +183,23 @@ def list_strategies(root: Path | None = None) -> list[str]:
     return ordered
 
 
-def install(force: bool = False) -> tuple[bool, str]:
+def install(
+    force: bool = False,
+    log: callable[[str], None] | None = None,
+) -> tuple[bool, str]:
+    def say(msg: str) -> None:
+        if log:
+            log(msg)
+        else:
+            print(msg)
+
     root = get_bundle_root()
     if root and not force:
         state = load_state()
         ver = state.get("version", "?")
         return True, f"DPI-движок уже установлен (v{ver}): {root}"
 
-    print("Загрузка последнего релиза zapret-discord-youtube...")
+    say("Загрузка последнего релиза zapret-discord-youtube...")
     try:
         release = fetch_latest_release()
         url, tag = _pick_zip_url(release)
@@ -198,13 +211,20 @@ def install(force: bool = False) -> tuple[bool, str]:
         zip_path.unlink()
 
     def progress(done: int, total: int) -> None:
+        if not total:
+            return
         pct = done * 100 // total
-        print(f"\r  Скачано: {pct}% ({done // 1024} KB)", end="", flush=True)
+        msg = f"Скачано: {pct}% ({done // 1024} KB)"
+        if log:
+            log(msg)
+        else:
+            print(f"\r  {msg}", end="", flush=True)
 
     try:
         if not zip_path.is_file():
             download_file(url, zip_path, on_progress=progress)
-            print()
+            if not log:
+                print()
     except Exception as exc:
         return False, f"Ошибка загрузки: {exc}"
 
@@ -214,7 +234,7 @@ def install(force: bool = False) -> tuple[bool, str]:
         shutil.rmtree(ZAPRET_CACHE, ignore_errors=True)
     ZAPRET_CACHE.mkdir(parents=True, exist_ok=True)
 
-    print("Распаковка...")
+    say("Распаковка...")
     try:
         bundle = _ensure_binaries(zip_path, ZAPRET_CACHE)
     except Exception as exc:
@@ -393,7 +413,11 @@ def status_text() -> str:
     return "\n".join(lines)
 
 
-def auto_find(check_fn, wait_sec: float = 4.0) -> tuple[bool, str]:
+def auto_find(
+    check_fn,
+    wait_sec: float = 4.0,
+    log: callable[[str], None] | None = None,
+) -> tuple[bool, str]:
     """
     Перебирает стратегии, пока check_fn() не вернёт True.
     check_fn — синхронная функция без аргументов.
@@ -401,11 +425,16 @@ def auto_find(check_fn, wait_sec: float = 4.0) -> tuple[bool, str]:
     if not is_admin():
         return False, "Для автоподбора нужен запуск от администратора."
 
-    ok, msg = install()
+    def say(msg: str) -> None:
+        if log:
+            log(msg)
+        else:
+            print(msg)
+
+    ok, msg = install(log=log)
     if not ok:
         return False, msg
-    print(msg)
-    print()
+    say(msg)
 
     root = get_bundle_root()
     assert root
@@ -413,23 +442,20 @@ def auto_find(check_fn, wait_sec: float = 4.0) -> tuple[bool, str]:
     if not strategies:
         return False, "Нет стратегий для перебора."
 
-    print(f"Перебор {len(strategies)} стратегий (это может занять несколько минут)...\n")
+    say(f"Перебор {len(strategies)} стратегий...")
 
     for i, name in enumerate(strategies, 1):
-        print(f"[{i}/{len(strategies)}] {name} ...", flush=True)
+        say(f"[{i}/{len(strategies)}] {name}")
         stop()
         ok, start_msg = start(name)
         if not ok:
-            print(f"  пропуск: {start_msg}")
+            say(f"  пропуск: {start_msg}")
             continue
         time.sleep(wait_sec)
         if check_fn():
             save_state({**load_state(), "active_strategy": name})
             return True, f"Рабочая стратегия: {name}"
-        print("  сайты всё ещё недоступны")
+        say("  сайты недоступны")
 
     stop()
-    return (
-        False,
-        "Ни одна стратегия не помогла. Попробуйте WARP или обновите bundle: python main.py dpi-install --force",
-    )
+    return False, "Ни одна стратегия не помогла. Попробуйте обновить движок (переустановка)."
