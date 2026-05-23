@@ -89,7 +89,7 @@
 ### Вариант B — из исходников (для разработки)
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/unblock-helper.git
+git clone https://github.com/AleksKrut/unblock-helper.git
 cd unblock-helper
 
 py -3 -m venv .venv
