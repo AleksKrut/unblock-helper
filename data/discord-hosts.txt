@@ -1,0 +1,7 @@
+# Домены для обновлений и CDN Discord (добавляются в list-general-user.txt)
+updates.discord.com
+dl.discordapp.net
+stable.dl2.discordapp.net
+cdn.discordapp.com
+media.discordapp.net
+gateway.discord.gg
